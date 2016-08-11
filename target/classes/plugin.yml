@@ -1,0 +1,4 @@
+name: SkinManager
+version: 0.0.1
+main: me.tyler.skinmanager.SkinManagerPlugin
+depend: [ProtocolLib]
