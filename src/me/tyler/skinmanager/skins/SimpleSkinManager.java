@@ -1,5 +1,6 @@
 package me.tyler.skinmanager.skins;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -11,7 +12,10 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import com.comphenix.packetwrapper.WrapperPlayServerPlayerInfo;
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.reflect.FieldAccessException;
 import com.comphenix.protocol.wrappers.EnumWrappers.NativeGameMode;
 import com.comphenix.protocol.wrappers.EnumWrappers.PlayerInfoAction;
 import com.comphenix.protocol.wrappers.PlayerInfoData;
@@ -63,20 +67,26 @@ public class SimpleSkinManager implements SkinManager {
 	
 	private void refreshPlayer(Player player){
 		
-		WrapperPlayServerPlayerInfo info = new WrapperPlayServerPlayerInfo();
+		PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
 		
 		List<PlayerInfoData> data = Arrays.asList(new PlayerInfoData[] {
 				new PlayerInfoData(getProfile(player), 0, NativeGameMode.fromBukkit(player.getGameMode()), WrappedChatComponent.fromText(player.getName()))
 		});
 		
-		info.setData(data);
+		packet.getPlayerInfoDataLists().write(0, data);
 		
 		for(Player target : Bukkit.getOnlinePlayers())
 		{
-			info.setAction(PlayerInfoAction.REMOVE_PLAYER);
-			info.sendPacket(target);
-			info.setAction(PlayerInfoAction.ADD_PLAYER);
-			info.sendPacket(target);
+			try {
+				packet.getPlayerInfoAction().write(0, PlayerInfoAction.REMOVE_PLAYER);
+				ProtocolLibrary.getProtocolManager().sendServerPacket(target, packet);
+				packet.getPlayerInfoAction().write(0, PlayerInfoAction.ADD_PLAYER);
+				ProtocolLibrary.getProtocolManager().sendServerPacket(target, packet);
+			} catch (FieldAccessException e) {
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				e.printStackTrace();
+			}
 		}
 		
 		World world = null;

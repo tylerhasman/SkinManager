@@ -10,7 +10,6 @@ import me.tyler.skinmanager.skins.Skin;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import com.comphenix.packetwrapper.WrapperPlayServerPlayerInfo;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
@@ -31,13 +30,15 @@ public class PlayerInfoPacketListener extends PacketAdapter {
 		
 		if(type == PacketType.Play.Server.PLAYER_INFO){
 			
-			WrapperPlayServerPlayerInfo wrapper = new WrapperPlayServerPlayerInfo(packet);
+			PlayerInfoAction action = packet.getPlayerInfoAction().read(0);
 
-			if(wrapper.getAction() == PlayerInfoAction.ADD_PLAYER){
+			if(action == PlayerInfoAction.ADD_PLAYER){
 				
 				List<PlayerInfoData> replaced = new ArrayList<>();
 				
-				for(PlayerInfoData data : wrapper.getData()){
+				List<PlayerInfoData> original = packet.getPlayerInfoDataLists().read(0);
+				
+				for(PlayerInfoData data : original){
 					
 					Player player = Bukkit.getPlayer(data.getProfile().getUUID());
 					
@@ -55,11 +56,11 @@ public class PlayerInfoPacketListener extends PacketAdapter {
 					
 				}
 
-				wrapper.setData(replaced);
+				packet.getPlayerInfoDataLists().write(0, replaced);
 			}
 			
 			
-			event.setPacket(wrapper.getHandle());
+			event.setPacket(packet);
 			
 		}
 	}
